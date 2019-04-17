@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script>
+        // observe.js
+        function defineReactive(data, key, val) {
+            observe(val); // 递归遍历所有子属性
+            var dep = new Dep();
+            Object.defineProperty(data, key, {
+                enumerable: true,
+                configurable: true,
+                set: function(newVal) {
+                    console.log('属性 '+ key +' 已经被监听，以前的值为：'+ val +'，现在的值为：'+ newVal);
+                    val = newVal;
+                    dep.notify(); // 如果数据变化，通知所有订阅者
+                },
+                get: function(){
+                    if (Dep.target) {
+                        dep.addSub(Dep.target);
+                    }
+                    return val;
+                }
+            })
+
+        }
+        Dep.target = null;
+
+        function observe(data){
+            if (!data || typeof data !== 'object') {
+                return;
+            }
+            Object.keys(data).forEach(function(key){
+                defineReactive(data, key, data[key])
+            })
+        }
+        
+        function Dep() {
+            this.subs = [];
+        }
+        Dep.prototype = {
+            addSub:function(sub) {
+                this.subs.push(sub);
+            },
+            notify:function() {
+                this.subs.forEach(function(sub) {
+                    sub.update();
+                })
+            }
+        }
+        // Watcher.js
+        function Watcher(vm, exp, cb) {
+            this.cb = cb;
+            this.vm = vm;
+            this.exp = exp;
+            this.value = this.get();
+        }
+
+        Watcher.prototype = {
+            update:function() {
+                this.run();
+            },
+            run:function() {
+                var value = this.vm.data[this.exp];
+                var oldVal = this.value;
+                if (value !== oldVal) {
+                    this.value = value;
+                    this.cb.call(this.vm, value, oldVal);
+                }
+            },
+            get:function() {
+                Dep.target = this;
+                var value = this.vm.data[this.exp];
+                Dep.target = null;
+                return value;
+            }
+        }
+        // complie.js
+        function Compile(el, vm) {
+            this.vm = vm;
+            this.el = document.querySelector(el);
+            this.fragment = null;
+            this.init();
+        }
+
+        Compile.prototype = {
+            init: function() {
+                if (this.el) {
+                    this.fragment = this.nodeToFragMent(this.el);
+                    this.compileElement(this.fragment);
+                    this.el.appendChild(this.fragment);
+                } else {
+                    console.log('Dom元素不存在');
+                }
+            },
+            nodeToFragMent: function(el) {
+                var fragment = document.createDocumentFragment();
+                var child = el.firstChild;
+                while (child) {
+                    fragment.appendChild(child);
+                    child = el.firstChild;
+                }
+                return fragment;
+            },
+            compileElement: function(el) {
+                var that = this;
+                var childNodes = el.childNodes;
+                [].slice.call(childNodes).forEach(function(node){
+                    var reg = /\{\{(.*)\}\}/;
+                    var text = node.textContent;
+
+                    if (that.isElementNode(node)) {
+                        that.compile(node)
+                    } else if (that.isTextNode(node) && reg.test(text)) {
+                        that.compileText(node, reg.exec(text)[1])
+                    }
+
+                    if (node.childNodes && node.childNodes.length) {
+                        that.compileElement(node);
+                    }
+                })
+            },
+            compile: function(node) {
+                var that = this;
+                var nodeAttrs = node.attributes;
+                Array.prototype.forEach.call(nodeAttrs, function(attr){
+                    var attrName = attr.name;
+                    if (that.isDirective(attrName)) {
+                        var exp = attr.value;
+                        var dir = attrName.substring(2);
+                        if (that.isEventDirective(dir)) { // 事件指令
+                            that.compileEvent(node, that.vm, exp, dir)
+                        } else { // v-model 指令
+                            that.compileModel(node, that.vm, exp, dir)
+                        }
+                        node.removeAttribute(attrName)
+                    }
+                })
+            },
+            compileText: function(node, exp){
+                var that = this;
+                var initText = this.vm[exp];
+                this.updateText(node, initText);
+                new Watcher(this.vm, exp, function (value) {
+                    that.updateText(node, value)
+                })
+            },
+            compileEvent: function(node, vm, exp, dir){
+                var eventType = dir.split(':')[1];
+                var cb = vm.methods && vm.methods[exp]
+
+                if (eventType && cb) {
+                    node.addEventListener(eventType, cb.bind(vm), false)
+                }
+            },
+            compileModel: function(node, vm, exp, dir){
+                var that = this;
+                var val = this.vm[exp];
+                this.modelUpdater(node, val);
+                new Watcher(this.vm, exp, function(value) {
+                    that.modelUpdater(node, value);
+                })
+                
+                node.addEventListener('input', function(e){
+                    var newValue = e.target.value;
+                    if (val === newValue) {
+                        return;
+                    }
+                    that.vm[exp] = newValue;
+                    val = newValue;
+                }, false)
+            },
+            updateText: function(node, value){
+                node.textContent = typeof value == 'undefined' ? '' : value;
+            },
+            modelUpdater: function(node, value){
+                node.value = typeof value == 'undefined' ? '' : value;
+            },
+            isDirective: function(attr) {
+                return attr.indexOf('v-') === 0
+            },
+            isEventDirective: function(dir){
+                return dir.indexOf('on:') === 0
+            },
+            isElementNode: function(node){
+                return node.nodeType == 1
+            },
+            isTextNode: function(node){
+                return node.nodeType == 3;
+            }
+        }
+        // 将Observer和Watcher关联起来
+        function Vue(options) {
+            var that = this;
+            this.data = options.data;
+            this.methods = options.methods;
+
+            Object.keys(this.data).forEach(function(key) {
+                that.proxyKeys(key); // 绑定代理属性
+            })
+
+            observe(this.data);
+            new Compile(options.el, this);
+            options.mounted.call(this); // 所有事情处理好后执行mounted函数
+        }
+        Vue.prototype = {
+            proxyKeys: function(key) {
+                var that = this;
+                Object.defineProperty(this, key, {
+                    enumerable: true,
+                    configurable: true,
+                    get:function() {
+                        return that.data[key];
+                    },
+                    set:function(newVal) {
+                        that.data[key] = newVal;
+                    }
+                })
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <h2>{{title}}</h2>
+        <input type="text" v-model="name" />
+        <h1>{{name}}</h1>
+        <button v-on:click="clickMe">click me</button>
+    </div>
+</body>
+<script>
+    var deanVue = new Vue({
+        el: '#app',
+        data:{
+            title: 'hello world',
+            name: 'dean',
+        },
+        mounted() {
+            window.setTimeout(() => {
+                this.title = '你好';
+            }, 1000);
+        },
+        methods: {
+            clickMe: function () {
+                this.title = 'hello world';
+            }
+        },
+    })
+</script>
+</html>

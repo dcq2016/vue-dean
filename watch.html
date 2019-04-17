@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script>
+        function Watcher(vm, exp, cb) {
+            this.cb = cb;
+            this.vm = vm;
+            this.exp = exp;
+            this.value = this.get();
+        }
+        Watcher.prototype = {
+            update:function() {
+                this.run();
+            },
+            run:function() {
+                var value = this.vm.data[this.exp];
+                var oldVal = this.value;
+                if (value !== oldVal) {
+                    this.value = value;
+                    this.cb.call(this.vm, value, oldVal);
+                }
+            },
+            get:function() {
+                Dep.target = this;
+                var value = this.vm.data[this.exp];
+                Dep.target = null;
+                return value;
+            }
+        }
+    </script>
+</head>
+<body>
+    
+</body>
+</html>

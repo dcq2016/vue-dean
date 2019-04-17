@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script>
+        // observe.js
+        function defineReactive(data, key, val) {
+            observe(val); // 递归遍历所有子属性
+            var dep = new Dep();
+            Object.defineProperty(data, key, {
+                enumerable: true,
+                configurable: true,
+                set: function(newVal) {
+                    console.log('属性 '+ key +' 已经被监听，以前的值为：'+ val +'，现在的值为：'+ newVal);
+                    val = newVal;
+                    dep.notify(); // 如果数据变化，通知所有订阅者
+                },
+                get: function(){
+                    if (Dep.target) {
+                        dep.addSub(Dep.target);
+                    }
+                    return val;
+                }
+            })
+
+        }
+        Dep.target = null;
+
+        function observe(data){
+            if (!data || typeof data !== 'object') {
+                return;
+            }
+            Object.keys(data).forEach(function(key){
+                defineReactive(data, key, data[key])
+            })
+        }
+        
+        function Dep() {
+            this.subs = [];
+        }
+        Dep.prototype = {
+            addSub:function(sub) {
+                this.subs.push(sub);
+            },
+            notify:function() {
+                this.subs.forEach(function(sub) {
+                    sub.update();
+                })
+            }
+        }
+        // Watcher.js
+        function Watcher(vm, exp, cb) {
+            this.cb = cb;
+            this.vm = vm;
+            this.exp = exp;
+            this.value = this.get();
+        }
+
+        Watcher.prototype = {
+            update:function() {
+                this.run();
+            },
+            run:function() {
+                var value = this.vm.data[this.exp];
+                var oldVal = this.value;
+                if (value !== oldVal) {
+                    this.value = value;
+                    this.cb.call(this.vm, value, oldVal);
+                }
+            },
+            get:function() {
+                Dep.target = this;
+                var value = this.vm.data[this.exp];
+                Dep.target = null;
+                return value;
+            }
+        }
+        // 将Observer和Watcher关联起来
+        function Vue(data, el, exp) {
+            this.data = data;
+            observe(data);
+            el.innerHTML = this.data[exp];
+            new Watcher(this, exp, function(value) {
+                el.innerHTML = value;
+            })
+            return this;
+        }
+    </script>
+</head>
+<body>
+    <div class="test">{{name}}</div>
+</body>
+<script>
+    var ele = document.querySelector('.test')
+    var deanVue = new Vue({
+        name: 'test world',
+    }, ele, 'name')
+    setTimeout(function(){
+        deanVue.data.name = 'dean';
+    }, 2000)
+</script>
+</html>
