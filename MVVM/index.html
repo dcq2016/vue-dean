@@ -18,7 +18,8 @@
         <div v-text="person.name"></div>
         <input type="text" v-model="msg" />
         <input type="text" v-model="person.name" />
-        <button v-on:click="handlerClick">改变</button>
+        <button v-on:click="handlerClick">v-on:click</button>
+        <button v-on:click="handlerClick">@click</button>
     </div>
     <script>
         var vm = new MVue({

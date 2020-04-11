@@ -134,12 +134,14 @@ class Complie {
                 name, // v-model v-on:click
                 value // msg
             } = attr;
-            if (this.isDireactive(name)) { // v-model="msg" v-on:click="handler"
-                // console.log(attr, '是指令v-');
-
+            if (this.isDireactive(name)) { // v-text v-html v-model v-on:click
                 const [, direact] = name.split('-');
                 const [directveName, eventName] = direact.split(':');
                 ComplieUtil[directveName](node, value, this.vm, eventName);
+                node.removeAttribute(name);
+            } else if (this.isDireactiveClick(name)) {
+                ComplieUtil[directveName](node, value, this.vm, name.split('@')[1]);
+                node.removeAttribute(name);
             }
         })
     }
@@ -157,6 +159,9 @@ class Complie {
     }
     isDireactive(attr) {
         return attr.startsWith('v-');
+    }
+    isDireactiveClick(attr) {
+        return attr.startsWith('@');
     }
 }
 
