@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVVM</title>
+    <script src="js/MVue.js"></script>
+
+</head>
+
+<body>
+    <div id="app">
+        <div>{{msg}}</div>
+        <div v-text="msg"></div>
+        <div v-html="htmlStr"></div>
+        <div>{{person.name}}---{{person.age}}</div>
+        <div v-text="person.name"></div>
+        <input type="text" v-model="msg" />
+        <input type="text" v-model="person.name" />
+        <button v-on:click="handlerClick">改变</button>
+    </div>
+    <script>
+        var vm = new MVue({
+            el: '#app',
+            data: {
+                msg: 'mvvm',
+                person: {
+                    name: 'dean',
+                    age: 18
+                },
+                htmlStr: '<h3>html文本显示</h3>'
+            },
+            methods: {
+                handlerClick() {
+                    console.log(this);
+                    this.data.msg = "学习mvvm原理";
+                    this.data.htmlStr = "<h3>已修改html文本显示</h3>";
+                    this.data.person.name = "张三";
+                }
+            }
+        })
+    </script>
+
+
+</body>
+
+</html>

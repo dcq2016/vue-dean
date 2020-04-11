@@ -1,12 +1,11 @@
 function Observer(data) {
     this.data = data;
-    this.walk(data);
+    this.init(data);
 }
 Observer.prototype = {
-    walk:function (data) {
-        var that = this;
-        Object.keys(data).forEach(function(key){
-            that.defineReactive(data, key, data[key])
+    init:function (data) {
+        Object.keys(data).forEach(key=>{
+            this.defineReactive(data, key, data[key])
         })
     },
     defineReactive: function(data, key, val) {
@@ -34,7 +33,7 @@ Observer.prototype = {
     }
 }
 
-function observe(value, vm){
+function observe(value){
     if (!value || typeof value !== 'object') {
         return;
     }
@@ -55,5 +54,3 @@ Dep.prototype = {
         })
     }
 }
-
-Dep.target = null;

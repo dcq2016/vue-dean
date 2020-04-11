@@ -1,3 +1,6 @@
+## 2020-04-11更新
+完善了Compile类（js/compile_update.js），新增了对象的双向绑定以及@click指令<br>
+新增演示文件index.html
 ## dVue
 vue的双向绑定原理及实现
 
