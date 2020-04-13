@@ -1,4 +1,7 @@
-## 2020-04-11更新
+## 更新记录
+##### 2020-04-13
+修复compile_update.js 不能编辑 {{person.name}}----{{person.age}} bug
+##### 2020-04-11
 完善了Compile类（js/compile_update.js），新增了对象的双向绑定以及@click指令<br>
 新增演示文件index.html
 ## dVue

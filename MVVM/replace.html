@@ -7,13 +7,20 @@
     <title>Document</title>
     <script>
         const vm = {
-            msg: 'test'
+            msg: 'test', 
+            age: 19, 
+            fav: '运动'
+
         }
-        let result = "{{msg}}---{{haha}}----{{debugger}}".replace(/\{\{(.+?)\}\}/g, (...args) => {
-            console.log(args);
-            return args[1];
+        const result = "{{msg}}---{{age}}----{{fav}}".replace(/\{\{(.+?)\}\}/g, (...args) => {
+            console.log(args[1]);
+            // return args[1];
+            return args[1].split('.').reduce((data, cur) => {
+                return data[cur];
+            },vm)
         })
-        document.write(result);
+
+        console.log('result:', result);
     </script>
 </head>
 

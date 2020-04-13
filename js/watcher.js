@@ -6,10 +6,19 @@ function Watcher(vm, expr, cb) {
 }
 
 Watcher.prototype = {
-    update:function() {
-        const value = this.expr.split('.').reduce((data, currentVal) => {
-            return data[currentVal];
-        }, this.vm);
+    update: function () {
+        let value;
+        if (this.expr.indexOf('{{') !== -1) {
+            value = this.expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
+                return args[1].split('.').reduce((data, currentVal) => {
+                    return data[currentVal];
+                }, this.vm);
+            })
+        } else {
+            value = this.expr.split('.').reduce((data, currentVal) => {
+                return data[currentVal];
+            }, this.vm);
+        }
 
         console.log('watcher新值：', value);
         var oldVal = this.value;
@@ -19,12 +28,22 @@ Watcher.prototype = {
             this.cb(value);
         }
     },
-    get:function() {
+    get: function () {
         Dep.target = this;
-        // var value = this.vm[this.expr];
-        const value = this.expr.split('.').reduce((data, currentVal) => {
-            return data[currentVal];
-        }, this.vm);
+        // const value = this.vm[this.expr];
+        let value;
+        if (this.expr.indexOf('{{') !== -1) {
+            value = this.expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
+                return args[1].split('.').reduce((data, currentVal) => {
+                    return data[currentVal];
+                }, this.vm);
+            })
+        } else {
+            value = this.expr.split('.').reduce((data, currentVal) => {
+                return data[currentVal];
+            }, this.vm);
+        }
+
         Dep.target = null;
         console.log('watcher旧值：', value);
         return value;

@@ -2,7 +2,7 @@
  * @Author: Dean 
  * @Date: 2020-04-11
  * @Last Modified by: Dean
- * @Last Modified time: 2020-04-11 17:13:29
+ * @Last Modified time: 2020-04-13 11:46:59
  */
 function Compile(el, vm) {
     this.vm = vm;
@@ -33,21 +33,23 @@ Compile.prototype = {
         return fragment;
     },
     compileElement: function (el) {
-        var that = this;
         var childNodes = el.childNodes;
-        [].slice.call(childNodes).forEach(function (node) {
+        [].slice.call(childNodes).forEach((node) => {
 
-            var reg = /\{\{(.*)\}\}/;
+            var reg = /\{\{(.+?)\}\}/g;
             var text = node.textContent;
 
-            if (that.isElementNode(node)) {
-                that.compile(node);
-            } else if (that.isTextNode(node) && reg.test(text)) {
-                that.compileText(node, reg.exec(text)[1]);
+            if (this.isElementNode(node)) {
+                this.compile(node);
+            } else if (this.isTextNode(node)) {
+                if (reg.test(text)) {
+                    this.compileText(node, text);
+                }
             }
+
             // 遍历子节点
             if (node.childNodes && node.childNodes.length) {
-                that.compileElement(node);
+                this.compileElement(node);
             }
         });
     },
@@ -91,16 +93,16 @@ Compile.prototype = {
         }
     },
     compileText: function (node, expr) {
+        console.log('expr---:', expr);
+        // {{person.name}}---{{peson.age}}  person.name  msg
         let value;
-        const [data, key] = expr.split('.');
-        if (expr.split('.').length > 1) {
-            value = key.split('.').reduce((data, currentVal) => {
-                return data[currentVal];
-            }, this.vm[data]);
+        const reg = /\{\{(.+?)\}\}/g;
+        if (expr.indexOf('{{') !== -1) {
+            value = expr.replace(reg, (...args) => {
+                return this.getVal(args[1], this.vm);
+            })
         } else {
-            value = expr.split('.').reduce((data, currentVal) => {
-                return data[currentVal];
-            }, this.vm);
+            value = this.getVal(expr, this.vm);
         }
 
         new Watcher(this.vm, expr, (value) => {
@@ -135,6 +137,19 @@ Compile.prototype = {
             console.log('expr', expr);
             this.setVal(expr, this.vm, newValue);
         }, false)
+    },
+    getVal(expr, vm) {
+        console.log('expr:', expr);
+        const [data, key] = expr.split('.');
+        if (expr.split('.').length > 1) {
+            return key.split('.').reduce((data, currentVal) => {
+                return data[currentVal];
+            }, vm[data]);
+        } else {
+            return expr.split('.').reduce((data, currentVal) => {
+                return data[currentVal];
+            }, vm);
+        }
     },
     setVal(expr, vm, inputVal) {
         console.log('setVal');
